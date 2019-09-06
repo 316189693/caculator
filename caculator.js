@@ -6,8 +6,8 @@
 // 4. 大小比较
 // 5. 与或运算
 // 6. 三目运算
-var op = ['[', ']', '(', ')', '!', '++', '--', '/', '*', '%', '+', '-', '>', '>=', '<', '<=', '==', '!=', '&&', '||', '?:', '=' ];
-// if left_pri higer than right_pri, then dataStack pop a op 
+var op = ['[', ']', '(', ')', '!', '++', '--', '/', '*', '%', '+', '-', '>', '>=', '<', '<=', '==', '!=', '&&', '||', '=' ];
+
 var left_pri = [{'op':'=', 'pri': 0}, {'op':'[', 'pri': 2}, {'op':']', 'pri': 300}, {'op':'(', 'pri': 10}, {'op':')', 'pri': 290},
 	           {'op':'!', 'pri': 280}, {'op':'++', 'pri': 280},{'op':'--', 'pri': 280}, 
 			   {'op':'*', 'pri': 260}, {'op':'/', 'pri': 260},{'op':'%', 'pri': 260},
@@ -25,15 +25,20 @@ var right_pri = [{'op':'=', 'pri': 0}, {'op':'[', 'pri': 300}, {'op':']', 'pri':
 			   {'op':'?', 'pri': 1}
 			   ];	
 var imediateOperateBeforeTernaryOp= ['!', '<', '>', '<=', '>=', '==', '&&', '||'];
+
+var ignoreValidateOperatore = ['$.']; // 如果表达式的元素包含ignoreValidateOperatore的一个项， 就默认这是个正常的元素， 不在校验格式
+var normalOP = ['++', '--', '>=', '<=', '==', '!=', '&&', '||'] // 如果表达式的元素和normalOP的任意一个项相同， 也认为是正确格式， 不在校验格式
 			   
 var dataStack = [];
-var opStack = initOpStack();
+var opStack = [];
 var SPLITOR = " ";
 function initOpStack(){
-	return ['='];
+	dataStack = [];
+	opStack = ["="];
 }
 
 function evalExpression(expression) {
+	initOpStack();
 	if (!expression){ return expression; }
     var dataOPAry = String.prototype.split.call(expression, SPLITOR); 
     if (dataOPAry.length == 1) {
@@ -42,32 +47,75 @@ function evalExpression(expression) {
 		}
 		return expression;
 	}
+	
+	var validateStr = validate(dataOPAry);
+	if (validateStr != "") {
+		throw "These" + validateStr + " characters contains operator, they should spliter by '" + SPLITOR + "'";
+	}
 
 	evalDataOPAry(dataOPAry);
 	return caculateFinalValue(); 
 	
 }
 
+function validate(dataOPAry) {
+	var containsOpAry = [];
+	var hasInvalidStr = false;
+	for (var i = 0; i < dataOPAry.length; i++) {
+		var item = dataOPAry[i];
+		if (containsOP(item)) {
+			containsOpAry.push(item);
+			hasInvalidStr = true;
+		}
+	}
+	return hasInvalidStr ? JSON.stringify(containsOpAry): "";
+}
+
 function caculateFinalValue(){
 	while(opStack.length > 0) {
 		 count(opStack.pop());
 	}
-	var value = parseStr(dataStack.pop());
+	var value = dataStack.pop();
 	return value;
 }
 
 function containsOP(expression){
-	var op = ['[', ']', '(', ')', '!', '++', '--', '/', '*', '%', '+', '-', '>', '>=', '<', '<=', '==', '!=', '&&', '||'];
-	if (expression && expression.indexOf(SPLITOR) == -1) {
-		op.forEach(function(item) {if (expression.indexOf(item) != -1){return true;}});
+	if (expression && expression.length > 1 && expression.indexOf(SPLITOR) == -1 && !isNormalOP(expression) && !hasIgnoreOp(expression)) {
+		
+		for (var i = 0; i < op.length; i++) {
+		  var operator = op[i];
+		  if (expression.indexOf(operator) != -1){
+			  return true;
+		  }
+	    }
 	} 
 	return false;
+}
+
+function hasIgnoreOp(expression) {
+	for (var i = 0; i < ignoreValidateOperatore.length; i++) {
+		  var operator = ignoreValidateOperatore[i];
+		  if (expression.indexOf(operator) != -1){
+			  return true;
+		  }
+	    }
+		return false;
+}
+
+function isNormalOP(expression) {
+	for (var i = 0; i < normalOP.length; i++) {
+		  var operator = normalOP[i];
+		  if (expression == operator){
+			  return true;
+		  }
+	    }
+		return false;
 }
 
 function evalDataOPAry(dataOPAry){
 
 	for(var i = 0; i < dataOPAry.length; i++) {
-	
+
 		var item = dataOPAry[i];
 		if (item == '?') {
             do{
@@ -79,7 +127,7 @@ function evalDataOPAry(dataOPAry){
 					count(op_left);
 				}
 			}while(isRunBeforeTernary)
-			var ternaryResult = parseStr(dataStack.pop());
+			var ternaryResult = dataStack.pop();
 			var lastSemicolonIndex = caculateTernaryValue(i, dataOPAry, ternaryResult);
 			if (ternaryResult == true) {
 				var tmp = opStack.pop();
@@ -103,12 +151,17 @@ function evalDataOPAry(dataOPAry){
 			countOP(item);
 		} else {
 			if (item){
-				dataStack.push(item);
+				dataStack.push(getData(item));
 			}
 			
 		}
 	}
 }
+
+function getData(item) {
+	return parseStr(item);
+}
+
 
 function isRunBeforeTernaryOp(op) {
 	var matchs = imediateOperateBeforeTernaryOp.filter(function(item) { return item == op});
@@ -170,21 +223,22 @@ function getLastSemicolonIndex(currentIndex, dataOPAry) {
 function count(op) {
 	var num = 0.0;
 	  switch(op) {
-		case '+' :  dataStack.push(parseStr(dataStack.pop())+parseStr(dataStack.pop()));break;
-		case '-' : num = parseStr(dataStack.pop()); dataStack.push(parseStr(dataStack.pop())-num);break;
-		case '%' : num = parseStr(dataStack.pop()); dataStack.push((parseStr(dataStack.pop()) % num));break;
-		case '*' :  dataStack.push(parseStr(dataStack.pop())*parseStr(dataStack.pop()));break;
-		case '/' :  num = parseStr(dataStack.pop());if(num == 0) {throw "caculate expression error, divide by 0." } dataStack.push(parseStr(dataStack.pop())/num);break;
-		case '!' :  num = parseStr(dataStack.pop()); dataStack.push(!parseStr(dataStack.pop()));break;
-		case '++' :  num = ++parseStr(dataStack.pop()); dataStack.push(!parseStr(dataStack.pop()));break;
-		case '--' :  num = --parseStr(dataStack.pop()); dataStack.push(!parseStr(dataStack.pop()));break;
-		case '>' :  num = parseStr(dataStack.pop());num = parseStr(dataStack.pop()) > num; dataStack.push(num);break;
-		case '>=' :  num = parseStr(dataStack.pop());num = parseStr(dataStack.pop()) >= num; dataStack.push(num);break;
-		case '<' :  num = parseStr(dataStack.pop());num = parseStr(dataStack.pop()) < num; dataStack.push(num);break;
-		case '<=' :  num = parseStr(dataStack.pop());num = parseStr(dataStack.pop()) <= num; dataStack.push(num);break;
-		case '==' :  num = parseStr(dataStack.pop());num = parseStr(dataStack.pop()) == num; dataStack.push(num);break;
-		case '&&' : dataStack.push(parseStr(dataStack.pop()) && parseStr(dataStack.pop()));break;
-		case '||' :  dataStack.push(parseStr(dataStack.pop()) || parseStr(dataStack.pop()));break;
+		case '+' :  dataStack.push(dataStack.pop() + dataStack.pop()); break;
+		case '-' : num = dataStack.pop(); dataStack.push(dataStack.pop()-num); break;
+		case '%' : num = dataStack.pop(); dataStack.push((dataStack.pop() % num)); break;
+		case '*' :  dataStack.push(dataStack.pop()*dataStack.pop()); break;
+		case '/' :  num = dataStack.pop(); if (num == 0) {throw "caculate expression error, divide by 0." } dataStack.push(dataStack.pop()/num); break;
+		case '!' :  num = dataStack.pop(); dataStack.push(!num); break;
+		case '++' :  num = dataStack.pop() + 1; dataStack.push(num); break;
+		case '--' :  num = dataStack.pop() - 1; dataStack.push(num); break;
+		case '>' :  num = dataStack.pop(); num = dataStack.pop() > num; dataStack.push(num); break;
+		case '>=' :  num = dataStack.pop(); num = dataStack.pop() >= num; dataStack.push(num); break;
+		case '<' :  num = dataStack.pop(); num = dataStack.pop() < num; dataStack.push(num); break;
+		case '<=' :  num = dataStack.pop(); num = dataStack.pop() <= num; dataStack.push(num); break;
+		case '==' :  num = dataStack.pop(); num = dataStack.pop() == num; dataStack.push(num); break;
+		case '!=' :  num = dataStack.pop(); num = dataStack.pop() != num; dataStack.push(num); break;
+		case '&&' : dataStack.push(dataStack.pop() && dataStack.pop()); break;
+		case '||' :  dataStack.push(dataStack.pop() || dataStack.pop()); break;
 	    default: break;
 	  }
 }
@@ -247,7 +301,7 @@ function parseStr(str){
      
 }
 
-/*
+
 /*
 4 + [ ( ( 3 -5 ) < 20 ) ? 30 : 40 ] + 6
 dataStack   opStack
@@ -287,9 +341,16 @@ var testAry = [
  {expression: " ( 4 + 5 ) < 10 && ( 3 + 6 ) < 10 ? true : false ", expected: true},
  {expression: " ( 4 + 5 ) < 10 || ( 3 + 6 ) < 10 ? true : false ", expected: true},
  {expression: " ( ( 4 + 5 ) < 10 && ( 3 + 6 ) < 10 ) ? true : false ", expected: true},
+ {expression: " ! ( 4 + 5 < 6 ) ? 20 : 30 ", expected: 20},
+ {expression: " ! ( ++ 4 + -- 5 < 6 ) ? 20 : 30 ", expected: 20},
+ {expression: " ! ( ++ 4 + -- 5 <= 6 ) ? 20 : 30 ", expected: 20},
+ {expression: " ! ( ++ 4 + -- 5 == 6 ) ? 20 : 30 ", expected: 20},
+ {expression: " ! ( ++ 4 + -- 5 > 6 ) ? 20 : 30 ", expected: 30},
+ {expression: " ! ( ++ 4 + -- 5 >= 6 ) ? 20 : 30 ", expected: 30},
+ {expression: " ! ( ++ 4 + -- 5 != 6 ) ? 20 : 30 ", expected: 30},
 // {expression: " 2 / 0 ", expected: "throw error"},
 ];
-testCalucator(testAry);
+
 
 function testCalucator(testAry){
 	var newItem = [];
@@ -308,7 +369,7 @@ function testCalucator(testAry){
 	console.log(JSON.stringify(newItem));
 }
 
-*/
+testCalucator(testAry);
 
 
 
