@@ -28,7 +28,9 @@ var imediateOperateBeforeTernaryOp= ['!', '<', '>', '<=', '>=', '==', '&&', '||'
 var ignoreValidateOP = ['$.']; // 如果表达式的元素包含 ignoreValidateOP 的一个项， 就默认这是个正常的元素， 不在校验格式
 var normalOP = ['++', '--', '>=', '<=', '==', '!=', '&&', '||'] // 如果表达式的元素和normalOP的任意一个项相同， 也认为是正确格式
 var supportOP = ['[', ']', '(', ')', '!', '++', '--', '/', '*', '%', '+', '-', '>', '>=', '<', '<=', '==', '!=', '&&', '||', '=' ];//支持的操作符， 包括三目?:
-			   
+// 如果要定义一个字符串， 并且字符串包含supportOP的字符， 那么需要用	constant_value_spliter 把数据包围起来, 例如 &chek%mg&, 这样表示设置值check%mg
+var constant_value_spliter = "&"; 
+	
 var dataStack = []; // 数据栈
 var opStack = []; // 操作符栈
 var SPLITOR = " ";// 表达式数据项和操作符的分隔符
@@ -72,7 +74,7 @@ function fetchIllegalFormatItems(expressionItems) {
 
 function containsOP(expressionItem) {
 	if (expressionItem && expressionItem.length > 1 && expressionItem.indexOf(SPLITOR) == -1 
-	    && !isNormalOP(expressionItem) && !hasIgnoreOp(expressionItem)) {
+	    && !isNormalOP(expressionItem) && !hasIgnoreOp(expressionItem) && !surroundWithConstantSpliter(expressionItem)) {
 		for (var i = 0; i < supportOP.length; i++) {
 		  var operator = supportOP[i];
 		  if (expressionItem.indexOf(operator) != -1) {
@@ -83,6 +85,12 @@ function containsOP(expressionItem) {
 	return false;
 }
 
+function surroundWithConstantSpliter(expressionItem) {
+ if (expressionItem.indexOf(constant_value_spliter) == 0 && expressionItem.lastIndexOf(constant_value_spliter) == (expressionItem.length-1)) {
+	 return true;
+ }
+ return false;
+}
 
 function isNormalOP(expressionItem) {
 	for (var i = 0; i < normalOP.length; i++) {
@@ -162,6 +170,9 @@ function parseStr(str) {
 	 } 
      if(typeof str == 'string' && String.prototype.toLowerCase.call(str) == 'false') {
 		return false; 
+	 }
+	 if (typeof str == 'string' && surroundWithConstantSpliter(str)) {
+		 return str.substr(1,str.length-2);
 	 }
 	 if (/^-?\d+(\.\d+)?$/.test(str)) {
 		 return parseFloat(str);
@@ -363,6 +374,7 @@ var testAry = [
  {expression: " ! ( ++ 4 + -- 5 > 6 ) ? 20 : 30 ", expected: 30},
  {expression: " ! ( ++ 4 + -- 5 >= 6 ) ? 20 : 30 ", expected: 30},
  {expression: " ! ( ++ 4 + -- 5 != 6 ) ? 20 : 30 ", expected: 30},
+ {expression: " ! ( ++ 4 + -- 5 != 6 ) ? &23%34/34& : &sd#$sd& ", expected: 'sd#$sd'},
 // {expression: " 2 / 0 ", expected: "throw error"},
 ];
 
