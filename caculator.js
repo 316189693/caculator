@@ -6,85 +6,76 @@
 // 4. 大小比较
 // 5. 与或运算
 // 6. 三目运算
-var op = ['[', ']', '(', ')', '!', '++', '--', '/', '*', '%', '+', '-', '>', '>=', '<', '<=', '==', '!=', '&&', '||', '=' ];
 
 var left_pri = [{'op':'=', 'pri': 0}, {'op':'[', 'pri': 2}, {'op':']', 'pri': 300}, {'op':'(', 'pri': 10}, {'op':')', 'pri': 290},
-	           {'op':'!', 'pri': 280}, {'op':'++', 'pri': 280},{'op':'--', 'pri': 280}, 
-			   {'op':'*', 'pri': 260}, {'op':'/', 'pri': 260},{'op':'%', 'pri': 260},
+	           {'op':'!', 'pri': 280}, {'op':'++', 'pri': 280}, {'op':'--', 'pri': 280}, 
+			   {'op':'*', 'pri': 260}, {'op':'/', 'pri': 260}, {'op':'%', 'pri': 260},
                {'op':'+', 'pri': 240}, {'op':'-', 'pri': 240}, 
 			   {'op':'>', 'pri': 220}, {'op':'<', 'pri': 220}, {'op':'>=', 'pri': 220}, {'op':'<=', 'pri': 220}, {'op':'!=', 'pri': 220}, {'op':'==', 'pri': 220},
                {'op':'&&', 'pri': 200}, {'op':'||', 'pri': 200},
 			   {'op':'?', 'pri': 310}
 			   ];
 var right_pri = [{'op':'=', 'pri': 0}, {'op':'[', 'pri': 300}, {'op':']', 'pri': 2}, {'op':'(', 'pri': 290}, {'op':')', 'pri': 10},
-	           {'op':'!', 'pri': 270}, {'op':'++', 'pri': 270},{'op':'--', 'pri': 270}, 
-			   {'op':'*', 'pri': 250}, {'op':'/', 'pri': 250},{'op':'%', 'pri': 250},
+	           {'op':'!', 'pri': 270}, {'op':'++', 'pri': 270}, {'op':'--', 'pri': 270}, 
+			   {'op':'*', 'pri': 250}, {'op':'/', 'pri': 250}, {'op':'%', 'pri': 250},
                {'op':'+', 'pri': 230}, {'op':'-', 'pri': 230}, 
 			   {'op':'>', 'pri': 210}, {'op':'<', 'pri': 210}, {'op':'>=', 'pri': 210}, {'op':'<=', 'pri': 210}, {'op':'!=', 'pri': 210}, {'op':'==', 'pri': 210},
                {'op':'&&', 'pri': 190}, {'op':'||', 'pri': 190},
 			   {'op':'?', 'pri': 1}
 			   ];	
-var imediateOperateBeforeTernaryOp= ['!', '<', '>', '<=', '>=', '==', '&&', '||'];
+var imediateOperateBeforeTernaryOp= ['!', '<', '>', '<=', '>=', '==', '&&', '||']; // 三目运算时需要先运行的操作符
 
-var ignoreValidateOperatore = ['$.']; // 如果表达式的元素包含ignoreValidateOperatore的一个项， 就默认这是个正常的元素， 不在校验格式
-var normalOP = ['++', '--', '>=', '<=', '==', '!=', '&&', '||'] // 如果表达式的元素和normalOP的任意一个项相同， 也认为是正确格式， 不在校验格式
+var ignoreValidateOP = ['$.']; // 如果表达式的元素包含 ignoreValidateOP 的一个项， 就默认这是个正常的元素， 不在校验格式
+var normalOP = ['++', '--', '>=', '<=', '==', '!=', '&&', '||'] // 如果表达式的元素和normalOP的任意一个项相同， 也认为是正确格式
+var supportOP = ['[', ']', '(', ')', '!', '++', '--', '/', '*', '%', '+', '-', '>', '>=', '<', '<=', '==', '!=', '&&', '||', '=' ];//支持的操作符， 包括三目?:
 			   
-var dataStack = [];
-var opStack = [];
-var SPLITOR = " ";
-function initOpStack(){
+var dataStack = []; // 数据栈
+var opStack = []; // 操作符栈
+var SPLITOR = " ";// 表达式数据项和操作符的分隔符
+
+function isOp(ch) {
+	var matchs = supportOP.filter(function(item) { return item == ch});
+	if (matchs && matchs.length > 0) {
+		return true;
+	}
+	return false;
+}
+
+function initStack() {
 	dataStack = [];
 	opStack = ["="];
 }
 
-function evalExpression(expression) {
-	initOpStack();
-	if (!expression){ return expression; }
-    var dataOPAry = String.prototype.split.call(expression, SPLITOR); 
-    if (dataOPAry.length == 1) {
-		if (containsOP(expression)) {
-			throw " each character of the expression must split by '" + SPLITOR + "'";
+function validateExpressionElementFormat(expressionItems) {
+    if (expressionItems.length == 1) {
+		if (containsOP(expressionItems)) {
+			throw " each item of the expression must split by '" + SPLITOR + "'";
 		}
-		return expression;
 	}
 	
-	var validateStr = validate(dataOPAry);
-	if (validateStr != "") {
-		throw "These" + validateStr + " characters contains operator, they should spliter by '" + SPLITOR + "'";
+	var illeagalItems = fetchIllegalFormatItems(expressionItems);
+	if (illeagalItems.length > 0) {
+		throw  JSON.stringify(illeagalItems) + " contains operator, they should spliter by '" + SPLITOR + "'";
 	}
-
-	evalDataOPAry(dataOPAry);
-	return caculateFinalValue(); 
-	
 }
 
-function validate(dataOPAry) {
-	var containsOpAry = [];
-	var hasInvalidStr = false;
-	for (var i = 0; i < dataOPAry.length; i++) {
-		var item = dataOPAry[i];
+function fetchIllegalFormatItems(expressionItems) {
+	var illeagalItems = [];
+	for (var i = 0; i < expressionItems.length; i++) {
+		var item = expressionItems[i];
 		if (containsOP(item)) {
-			containsOpAry.push(item);
-			hasInvalidStr = true;
+			illeagalItems.push(item);
 		}
 	}
-	return hasInvalidStr ? JSON.stringify(containsOpAry): "";
+	return illeagalItems;
 }
 
-function caculateFinalValue(){
-	while(opStack.length > 0) {
-		 count(opStack.pop());
-	}
-	var value = dataStack.pop();
-	return value;
-}
-
-function containsOP(expression){
-	if (expression && expression.length > 1 && expression.indexOf(SPLITOR) == -1 && !isNormalOP(expression) && !hasIgnoreOp(expression)) {
-		
-		for (var i = 0; i < op.length; i++) {
-		  var operator = op[i];
-		  if (expression.indexOf(operator) != -1){
+function containsOP(expressionItem) {
+	if (expressionItem && expressionItem.length > 1 && expressionItem.indexOf(SPLITOR) == -1 
+	    && !isNormalOP(expressionItem) && !hasIgnoreOp(expressionItem)) {
+		for (var i = 0; i < supportOP.length; i++) {
+		  var operator = supportOP[i];
+		  if (expressionItem.indexOf(operator) != -1) {
 			  return true;
 		  }
 	    }
@@ -92,76 +83,26 @@ function containsOP(expression){
 	return false;
 }
 
-function hasIgnoreOp(expression) {
-	for (var i = 0; i < ignoreValidateOperatore.length; i++) {
-		  var operator = ignoreValidateOperatore[i];
-		  if (expression.indexOf(operator) != -1){
-			  return true;
-		  }
-	    }
-		return false;
-}
 
-function isNormalOP(expression) {
+function isNormalOP(expressionItem) {
 	for (var i = 0; i < normalOP.length; i++) {
-		  var operator = normalOP[i];
-		  if (expression == operator){
-			  return true;
-		  }
-	    }
-		return false;
-}
-
-function evalDataOPAry(dataOPAry){
-
-	for(var i = 0; i < dataOPAry.length; i++) {
-
-		var item = dataOPAry[i];
-		if (item == '?') {
-            do{
-				var op_left = opStack.pop();
-				var isRunBeforeTernary = isRunBeforeTernaryOp(op_left);
-				if (!isRunBeforeTernary) {
-					opStack.push(op_left);
-				} else {
-					count(op_left);
-				}
-			}while(isRunBeforeTernary)
-			var ternaryResult = dataStack.pop();
-			var lastSemicolonIndex = caculateTernaryValue(i, dataOPAry, ternaryResult);
-			if (ternaryResult == true) {
-				var tmp = opStack.pop();
-				if (tmp == "[" ) {					
-					var ternaryEndIndex = getClosedOP(']', (lastSemicolonIndex+1), dataOPAry);
-					dataOPAry = dataOPAry.slice(ternaryEndIndex+1);
-					i = -1;
-				} else if (tmp == "(") {					
-					var ternaryEndIndex = getClosedOP(')', (lastSemicolonIndex+1), dataOPAry);
-					dataOPAry = dataOPAry.slice(ternaryEndIndex+1);
-					i = -1;
-				} else {
-					opStack.push(tmp);
-					i = dataOPAry.length;
-				}
-			} else {
-				i = dataOPAry.length;
-			}
-		} else if (isOp(item)){
-	
-			countOP(item);
-		} else {
-			if (item){
-				dataStack.push(getData(item));
-			}
-			
-		}
+		 var operator = normalOP[i];
+		 if (expressionItem == operator) {
+			 return true;
+		 }
 	}
+	return false;
 }
 
-function getData(item) {
-	return parseStr(item);
+function hasIgnoreOp(expressionItem) {
+	for (var i = 0; i < ignoreValidateOP.length; i++) {
+		 var operator = ignoreValidateOP[i];
+		 if (expressionItem.indexOf(operator) != -1) {
+			 return true;
+		 }
+	}
+	return false;
 }
-
 
 function isRunBeforeTernaryOp(op) {
 	var matchs = imediateOperateBeforeTernaryOp.filter(function(item) { return item == op});
@@ -171,10 +112,11 @@ function isRunBeforeTernaryOp(op) {
 	return false;
 }
 
-function getClosedOP(closedOP, start_index, dataOPAry) {
-	var bracket_count = 0; //括号数目
-	for(var i = start_index; i < dataOPAry.length; i++) {
-		var item = dataOPAry[i];
+//获取闭括号的位置
+function getClosedBracketIndex(closedOP, start_index, expressionItems) {
+	var bracket_count = 0; 
+	for(var i = start_index; i < expressionItems.length; i++) {
+		var item = expressionItems[i];
 		if (item == '(' || item == '[') {
 			++bracket_count;
 		} else if(bracket_count != 0 && (item == ')' || item == ']')) {
@@ -187,25 +129,19 @@ function getClosedOP(closedOP, start_index, dataOPAry) {
 	return -1;
 }
 
-function caculateTernaryValue(currentIndex, dataOPAry, ternaryResult) {
-	var lastSemicolonIndex = getLastSemicolonIndex(currentIndex + 1 , dataOPAry);
-	if (lastSemicolonIndex == -1) {
-		throw "'?:' operator not found match ':' ";
-	}
-	var ternaryCaculateResuslt = null;
+function caculateTernaryValue(currentIndex, lastSemicolonIndex, expressionItems, ternaryResult) {
 	if (ternaryResult == true) {
-		evalDataOPAry(dataOPAry.slice(currentIndex+1 , lastSemicolonIndex));
+		evalDataOPAry(expressionItems.slice(currentIndex + 1 , lastSemicolonIndex));
 	} else {
-		evalDataOPAry(dataOPAry.slice(lastSemicolonIndex+1));
+		evalDataOPAry(expressionItems.slice(lastSemicolonIndex + 1));
 	}
-	return lastSemicolonIndex;
 }
 
-function getLastSemicolonIndex(currentIndex, dataOPAry) {
+function getLastSemicolonIndex(currentIndex, expressionItems) {
 	var bracket_count = 0;
-	for(var i = currentIndex; i < dataOPAry.length; i++) {
-		var item = dataOPAry[i];
-		if (item == '[' || item == '('){
+	for(var i = currentIndex; i < expressionItems.length; i++) {
+		var item = expressionItems[i];
+		if (item == '[' || item == '(') {
 			++bracket_count;
 		}
 		
@@ -220,9 +156,61 @@ function getLastSemicolonIndex(currentIndex, dataOPAry) {
 	return -1;
 }
 
+function parseStr(str) {
+     if (typeof str == 'string' && String.prototype.toLowerCase.call(str) == 'true') {
+		 return true;
+	 } 
+     if(typeof str == 'string' && String.prototype.toLowerCase.call(str) == 'false') {
+		return false; 
+	 }
+	 if (/^-?\d+(\.\d+)?$/.test(str)) {
+		 return parseFloat(str);
+	 }
+	 return str;
+     
+}
+
+function getData(item) {
+	return parseStr(item);
+}
+
+function fetchOpPri(op, opPriAry) {
+	var matchs = opPriAry.filter(function(item) { return item['op'] == op});
+	if (matchs && matchs.length > 0) {
+		return matchs[0].pri;
+	}
+	return -1;
+}
+
+function judgePri(left_op, right_op) {
+	if (!left_op || !right_op) {
+		return -1;
+	}
+	var rst = fetchOpPri(left_op, left_pri) -  fetchOpPri(right_op, right_pri);
+	if (rst < 0) {
+		opStack.push(left_op);
+	}
+	return rst;
+}
+
+function countOP(right_op) {
+	do {    
+	    var left_op = opStack.pop(); 
+	    var priCompare = judgePri(left_op, right_op);
+		if (priCompare >= 0 && !((left_op == '(' && right_op == ')') || (left_op == '[' && right_op == ']'))) {
+		    count(left_op);
+		} else if (priCompare == 0 && ((left_op == '(' && right_op == ')') || (left_op == '[' && right_op == ']'))) {
+			priCompare = -1;
+		} else {
+		    opStack.push(right_op);
+		    priCompare = -1;
+		}
+	} while (priCompare >= 0);	
+}
+
 function count(op) {
 	var num = 0.0;
-	  switch(op) {
+	switch(op) {
 		case '+' :  dataStack.push(dataStack.pop() + dataStack.pop()); break;
 		case '-' : num = dataStack.pop(); dataStack.push(dataStack.pop()-num); break;
 		case '%' : num = dataStack.pop(); dataStack.push((dataStack.pop() % num)); break;
@@ -240,70 +228,97 @@ function count(op) {
 		case '&&' : dataStack.push(dataStack.pop() && dataStack.pop()); break;
 		case '||' :  dataStack.push(dataStack.pop() || dataStack.pop()); break;
 	    default: break;
-	  }
-}
-
-function countOP(right_op) {
-	do {    
-	        var left_op = opStack.pop(); 
-	        var priCompare = judgePri(left_op, right_op);
-		    if (priCompare >= 0 && !((left_op == '(' && right_op == ')') || (left_op == '[' && right_op == ']'))) {
-				count(left_op);
-			} else if (priCompare == 0 && ((left_op == '(' && right_op == ')') || (left_op == '[' && right_op == ']')) ) {
-				priCompare = -1;
-			}
-			else {
-		        opStack.push(right_op);
-				priCompare = -1;
-			}
-			
-	} while(priCompare >= 0);	
-}
-
-function fetchOpPri(op, opPriAry) {
-	var matchs = opPriAry.filter(function(item) { return item['op'] == op});
-	if (matchs && matchs.length > 0) {
-		return matchs[0].pri;
 	}
-	return -1;
 }
 
-function isOp(ch) {
-	var matchs = op.filter(function(item) { return item == ch});
-	if (matchs && matchs.length > 0) {
-		return true;
-	}
-	return false;
+function runBeforeTernary() {
+	do {
+	    var op_left = opStack.pop();
+		var isRunBeforeTernary = isRunBeforeTernaryOp(op_left);
+		if (!isRunBeforeTernary) {
+			opStack.push(op_left);
+		} else {
+			count(op_left);
+		}
+	} while (isRunBeforeTernary); // 如果是问号, 则要先将问号之前的表达式计算出一个结果, 看是false还是true;
 }
 
-function judgePri(left_op, right_op) {
-	if (!left_op || !right_op) {
-		return -1;
+function countTernary(index, expressionItems) {
+	var rst = {index: index, expressionItems: expressionItems};
+	runBeforeTernary(); // 如果是问号, 则要先将问号之前的表达式计算出一个结果, 看是false还是true;
+	var ternaryResult = dataStack.pop();// 取出三目运算符问号操作符之前的运算结果;
+	// 获取三目运算符分号的位置
+	var lastSemicolonIndex = getLastSemicolonIndex(rst.index + 1 , expressionItems);
+	if (lastSemicolonIndex == -1) {
+		throw "'?:' operator not found match ':' ";
 	}
-	var rst = fetchOpPri(left_op, left_pri) -  fetchOpPri(right_op, right_pri);
-	if (rst < 0){
-		opStack.push(left_op);
+	//根据问号之前的true, false 执行三目运算符对应的表达式
+	caculateTernaryValue(rst.index, lastSemicolonIndex, expressionItems, ternaryResult);	
+	if (ternaryResult == true) {
+		// 如果三目运算符问号之前的结果是true, 那么我们还要获取三目运算符之后的表达式, 例如:[(3+4)>5 ? 12: 14]+30+40, 
+		//当我们运算完'[(3+4)>5 ? 12: 14]'之后,还需要继续计算'+30+40'
+		var tmp = opStack.pop();
+		if (tmp == "[" ) {					
+			var ternaryEndIndex = getClosedBracketIndex(']', (lastSemicolonIndex+1), expressionItems);
+			rst.expressionItems = expressionItems.slice(ternaryEndIndex+1);
+			rst.index = -1;
+		} else if (tmp == "(") {					
+			var ternaryEndIndex = getClosedBracketIndex(')', (lastSemicolonIndex+1), expressionItems);
+			rst.expressionItems = expressionItems.slice(ternaryEndIndex+1);
+			rst.index= -1;
+		} else {
+			opStack.push(tmp);
+			rst.index = expressionItems.length;
+		}
+	} else {
+		// 如果三目运算符问号之前的结果是false, 例如:[(3+4)<5 ? 12: 14]+30+40, 那么我们在执行caculateTernaryValue()方法的时候，
+		// 会截取'14]+30+40'作为子运算符集合循环调用evalDataOPAry()方法得到结果,因此，这个循环就结束了。
+		rst.index = expressionItems.length;
 	}
 	return rst;
 }
 
-function parseStr(str){
-     if (typeof str == 'string' && String.prototype.toLowerCase.call(str) == 'true'){
-		 return true;
-	 } 
-     if(typeof str == 'string' && String.prototype.toLowerCase.call(str) == 'false') {
-		return false; 
-	 }
-	 if (/^-?\d+(\.\d+)?$/.test(str)) {
-		 return parseFloat(str);
-	 }
-	 return str;
-     
+function evalDataOPAry(expressionItems) {
+	for(var i = 0; i < expressionItems.length; i++) {
+		var item = expressionItems[i];
+		if (item == '?') {
+			//三目运算符?:特殊处理
+           var rst = countTernary(i, expressionItems);
+		   i = rst.index;
+		   expressionItems = rst.expressionItems;
+		} else if (isOp(item)) {
+	        // 如果是运算符， 我们就要从opStack堆栈取出一个操作符来和它比较， 看谁的优先级比较高， 如果item的优先级高，则入栈；
+			// 小于等于就运行取出的操作符。
+			countOP(item);
+		} else {
+			//剩下的非操作符的项都会入数据栈dataStack
+			if (item) {
+				dataStack.push(getData(item));
+			}
+		}
+	}
 }
 
+function caculateFinalValue() {
+	while(opStack.length > 0) {
+		 count(opStack.pop());
+	}
+	return dataStack.pop();
+}
+
+function evalExpression(expression) {	
+	if (!expression) { throw " Bad expression:" + expression ; } // 表达式不能为空
+    var expressionItems = String.prototype.split.call(expression, SPLITOR); 
+	validateExpressionElementFormat(expressionItems); // 校验表达式的每个项是否格式正确，不能包含操作符， 应该用分隔符分隔；
+    initStack(); //初始化数据栈和操作符堆栈；
+	evalDataOPAry(expressionItems); // 计算所有的表达式
+	var finalValue = caculateFinalValue(); // 最终操作符栈opStack会剩下一些操作符， 需要从右往左依次执行.
+	return finalValue;
+}
 
 /*
 4 + [ ( ( 3 -5 ) < 20 ) ? 30 : 40 ] + 6
+计算逻辑：
 dataStack   opStack
 4           
             +
@@ -352,7 +367,7 @@ var testAry = [
 ];
 
 
-function testCalucator(testAry){
+function testCalucator(testAry) {
 	var newItem = [];
 	var failCount = 0;
 	testAry.forEach(function(item) {
