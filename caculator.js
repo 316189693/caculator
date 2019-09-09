@@ -53,20 +53,61 @@ function validateExpressionElementFormat(expressionItems) {
 			throw " each item of the expression must split by '" + SPLITOR + "'";
 		}
 	}
-	
+	var isBracketsMatch = validateBrackets(expressionItems);
+	if (!isBracketsMatch) {
+		throw  " expression has mismatch bracket pairs.";
+	}
 	var illeagalItems = fetchIllegalFormatItems(expressionItems);
 	if (illeagalItems.length > 0) {
 		throw  JSON.stringify(illeagalItems) + " contains operator, they should spliter by '" + SPLITOR + "'";
 	}
 }
 
+function validateBrackets(expressionItems) {
+	var square_bracket = []; //中括号
+	var bracket = []; //小括号
+	var item = null;
+	for (var i = 0; i < expressionItems.length; i++) {
+		item = expressionItems[i];
+		if (item == "[") {
+		    square_bracket.push(item);
+		} else if(item == "]") {
+			if (square_bracket.length <= 0) {
+				return false;
+			}
+			square_bracket.pop();
+		} else if(item == '(') {
+			bracket.push(item);
+		} else if(item == ")") {
+			if (bracket.length <= 0) {
+				return false;
+			}
+		    bracket.pop();	
+		}
+	}
+	if (square_bracket.length == 0 && bracket.length == 0) {
+		return true;
+	}
+	return false;
+}
+
 function fetchIllegalFormatItems(expressionItems) {
 	var illeagalItems = [];
+	var bracket_count = 0;
 	for (var i = 0; i < expressionItems.length; i++) {
 		var item = expressionItems[i];
 		if (containsOP(item)) {
 			illeagalItems.push(item);
 		}
+		if (item == "[" || item == "(") {
+			++bracket_count;
+		}
+		if (item == "]" || item == ")") {
+			--bracket_count;
+		}
+	}
+	if (bracket_count != 0) {
+		
 	}
 	return illeagalItems;
 }
