@@ -351,6 +351,9 @@ function countTernary(index, expressionItems) {
 	var rst = {index: index, expressionItems: expressionItems};
 	runBeforeTernary(); // 如果是问号, 则要先将问号之前的表达式计算出一个结果, 看是false还是true;
 	var ternaryResult = dataStack.pop();// 取出三目运算符问号操作符之前的运算结果;
+	if (typeof ternaryResult != 'boolean') {
+		ternaryResult = !!ternaryResult;
+	}
 	// 获取三目运算符分号的位置
 	var lastSemicolonIndex = getLastSemicolonIndex(rst.index + 1 , expressionItems);
 	if (lastSemicolonIndex == -1) {
@@ -468,6 +471,7 @@ var testAry = [
  {expression: " ! ( ++ 4 + -- 5 >= 6 ) ? 20 : 30 ", expected: 30},
  {expression: " ! ( ++ 4 + -- 5 != 6 ) ? 20 : 30 ", expected: 30},
  {expression: " [ ( 4 ) ] > 5 ? 3 : 2 ", expected: 2},
+ {expression: " [ ( &lisi& ) ] ? &zhangshan& : &wangwu& ", expected: 'zhangshan'},
  {expression: " ! ( ++ 4 + -- 5 != 6 ) ? &23%34/34& : &sd#$sd& ", expected: 'sd#$sd'},
 // {expression: " 2 / 0 ", expected: "throw error"},
 ];
