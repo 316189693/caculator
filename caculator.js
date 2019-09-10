@@ -26,20 +26,23 @@ var imediateOperateBeforeTernaryOp= ['!', '<', '>', '<=', '>=', '==', '&&', '||'
 
 var ignoreValidateOP = ['$.']; // 如果表达式的元素包含 ignoreValidateOP 的一个项， 就默认这是个正常的元素， 不在校验格式
 var normalOP = ['++', '--', '>=', '<=', '==', '!=', '&&', '||'] // 如果表达式的元素和normalOP的任意一个项相同， 也认为是正确格式
-var supportOP = ['[', ']', '(', ')', '!', '++', '--', '/', '*', '%', '+', '-', '>', '>=', '<', '<=', '==', '!=', '&&', '||', '=' ];//支持的操作符， 包括三目?:
+var supportOP = ['[', ']', '(', ')', '!', '++', '--', '/', '*', '%', '+', '-', '>', '>=', '<', '<=', '==', '!=', '&&', '||', '=', '?', ":" ];//支持的操作符， 包括三目?:
 // 如果要定义一个字符串， 并且字符串包含supportOP的字符， 那么需要用	constant_value_spliter 把数据包围起来, 例如 &chek%mg&, 这样表示设置值check%mg
 var constant_value_spliter = "&"; 
+
+var unaryOP = ['++', '--', '!'];//单目运算符
+var brackets = ['[', ']', '(', ')'];
 	
 var dataStack = []; // 数据栈
 var opStack = []; // 操作符栈
 var SPLITOR = " ";// 表达式数据项和操作符的分隔符
 
-function isOp(ch) {
-	var matchs = supportOP.filter(function(item) { return item == ch});
-	if (matchs && matchs.length > 0) {
-		return true;
-	}
-	return false;
+function isOp(expressionItem) {
+	return isInArray(supportOP, expressionItem);
+}
+
+function isInArray(array, searchItem) {
+	return Array.prototype.findIndex.call(array, function(item){return item == searchItem}) != -1;
 }
 
 function initStack() {
@@ -57,6 +60,12 @@ function validateExpressionElementFormat(expressionItems) {
 	if (!isBracketsMatch) {
 		throw  " expression has mismatch bracket pairs.";
 	}
+	
+	var sameItemLinksAry = sameTypeExpressionItemsLinked(expressionItems);
+	if (sameItemLinksAry && sameItemLinksAry.length > 0) {
+		throw 'expression has same operate type items linked:'+JSON.stringify(sameItemLinksAry);
+	}
+	
 	var illeagalItems = fetchIllegalFormatItems(expressionItems);
 	if (illeagalItems.length > 0) {
 		throw  JSON.stringify(illeagalItems) + " contains operator, they should spliter by '" + SPLITOR + "'";
@@ -89,6 +98,50 @@ function validateBrackets(expressionItems) {
 		return true;
 	}
 	return false;
+}
+
+function isBracket(expressionItem){
+	return isInArray(brackets, expressionItem);
+}
+
+function isUnaryOP(expressionItem) {
+	return isInArray(unaryOP, expressionItem);
+}
+
+function sameTypeExpressionItemsLinked(expressionItems) {
+	var isOpLastItem = null;
+	var isOpCurrentItem = null;
+	var item = null;
+	var lastItem = null;
+	var isLastBracket = null;
+	var isCurrentBracket = null;
+	var isCurrentUnaryOP = null;
+	var sameItemLinksAry = [];
+	for (var i = 0; i < expressionItems.length; i++) {
+		item = expressionItems[i];
+		if (!item) continue;
+		isOpCurrentItem = isOp(item);
+		isCurrentBracket = isBracket(item);
+		isCurrentUnaryOP = isUnaryOP(item);
+		if (isCurrentUnaryOP) {
+		    isOpLastItem = null;
+	        isOpCurrentItem = null;
+	        item = null;
+	        lastItem = null;
+	        isLastBracket = null;
+	        isCurrentBracket = null;
+	        isCurrentUnaryOP = null;
+			continue;
+		}
+		if ((isOpCurrentItem && !isCurrentBracket && !isLastBracket && isOpLastItem == true) || (!isOpCurrentItem && isOpLastItem == false)) {
+			sameItemLinksAry.push(lastItem + " " + item);
+		}
+		isOpLastItem = isOpCurrentItem;
+		lastItem = item;
+		isLastBracket = isCurrentBracket;
+	}
+	
+	return sameItemLinksAry;
 }
 
 function fetchIllegalFormatItems(expressionItems) {
@@ -414,6 +467,7 @@ var testAry = [
  {expression: " ! ( ++ 4 + -- 5 > 6 ) ? 20 : 30 ", expected: 30},
  {expression: " ! ( ++ 4 + -- 5 >= 6 ) ? 20 : 30 ", expected: 30},
  {expression: " ! ( ++ 4 + -- 5 != 6 ) ? 20 : 30 ", expected: 30},
+ {expression: " [ ( 4 ) ] > 5 ? 3 : 2 ", expected: 2},
  {expression: " ! ( ++ 4 + -- 5 != 6 ) ? &23%34/34& : &sd#$sd& ", expected: 'sd#$sd'},
 // {expression: " 2 / 0 ", expected: "throw error"},
 ];
