@@ -4,6 +4,14 @@
 * 2. 每个项之间用空格隔开， 例如  ( 4 + 5 ) < 10 || ( 3 + 6 ) < 10 ? true : false 
 * 3. 每个项都会校验， 除非项包含 ignoreValidateOP 的项， 或者是normalOP的项， 或者是#1的情况， 否则都会认为非法的项
 * 4. 已入栈的元素当成左操作符， 当前操作符为右操作符， 比较两者的优先级， 优先级高的可以入栈， 否则就要将栈操作符弹出进行运算；
+* 5. 方法[validateExpressionElementFormat, evalExpression] 存在的异常消息：
+    1. 每个表达式元素必须用逗号分隔： " each item of the expression must split by '" + SPLITOR + "'";
+	2. 表达式的括号要配对：" expression has mismatch bracket pairs.";
+	3. 两个相同类型的元素不能放在一起， 比如: '+ -': 'expression has same operate type items linked:'+JSON.stringify(sameItemLinksAry);
+	4. 表达式元素里面不能包含操作符， 如果是个常量， 请前后加上'&':JSON.stringify(illeagalItems) + " contains operator, they should spliter by '" + SPLITOR + "'";
+    5. 表达式不能为空： " Bad expression:" + expression ;
+	6. 三目运算符必须配对： "'?:' operator not found match ':' ";
+	7. 不能除以0：  "caculate expression error, divide by 0." 
 */
 
 var left_pri = [{'op':'=', 'pri': 0}, {'op':'[', 'pri': 2}, {'op':']', 'pri': 300}, {'op':'(', 'pri': 10}, {'op':')', 'pri': 290},
