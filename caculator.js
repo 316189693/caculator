@@ -421,15 +421,20 @@ function caculateFinalValue() {
 	return dataStack.pop();
 }
 
-function evalExpression(expression) {	
-	if (!expression) { throw " Bad expression:" + expression ; } // 表达式不能为空
-    var expressionItems = String.prototype.split.call(expression, SPLITOR); 
-	validateExpressionElementFormat(expressionItems); // 校验表达式的每个项是否格式正确，不能包含操作符， 应该用分隔符分隔；
-    initStack(); //初始化数据栈和操作符堆栈；
-	evalDataOPAry(expressionItems); // 计算所有的表达式
-	var finalValue = caculateFinalValue(); // 最终操作符栈opStack会剩下一些操作符， 需要从右往左依次执行.
-	return finalValue;
+function evalExpressionItems(expressionItems) {
+        initStack(); //初始化数据栈和操作符堆栈；
+        evalDataOPAry(expressionItems); // 计算所有的表达式
+        var finalValue = caculateFinalValue(); // 最终操作符栈opStack会剩下一些操作符， 需要从右往左依次执行.
+        return finalValue;
+    }
+
+function evalExpression(expression) {
+    if (!expression) { throw " Bad expression:" + expression ; } // 表达式不能为空
+    var expressionItems = String.prototype.split.call(expression, SPLITOR);
+    validateExpressionElementFormat(expressionItems); // 校验表达式的每个项是否格式正确，不能包含操作符， 应该用分隔符分隔；
+    return evalExpressionItems(expressionItems);
 }
+
 
 /*
 4 + [ ( ( 3 -5 ) < 20 ) ? 30 : 40 ] + 6
