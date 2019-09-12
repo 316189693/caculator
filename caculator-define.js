@@ -6,6 +6,7 @@ define([
     function Caculator() {
         _this = this;
         this.SPLITOR = SPLITOR;
+        this.CUSTANT_VALUE_SPLITOR = constant_value_spliter;
     }
 
     Caculator.prototype.validate = function(expression){
@@ -37,27 +38,31 @@ define([
         7. 不能除以0：  "caculate expression error, divide by 0."
     */
 
-    var left_pri = [{'op':'=', 'pri': 0}, {'op':'[', 'pri': 2}, {'op':']', 'pri': 300}, {'op':'(', 'pri': 10}, {'op':')', 'pri': 290},
+    var left_pri = [{'op':'=', 'pri': 50}, {'op':'[', 'pri': 150}, {'op':']', 'pri': 300}, {'op':'(', 'pri': 180}, {'op':')', 'pri': 290},
         {'op':'!', 'pri': 280}, {'op':'++', 'pri': 280}, {'op':'--', 'pri': 280},
         {'op':'*', 'pri': 260}, {'op':'/', 'pri': 260}, {'op':'%', 'pri': 260},
         {'op':'+', 'pri': 240}, {'op':'-', 'pri': 240},
         {'op':'>', 'pri': 220}, {'op':'<', 'pri': 220}, {'op':'>=', 'pri': 220}, {'op':'<=', 'pri': 220}, {'op':'!=', 'pri': 220}, {'op':'==', 'pri': 220},
         {'op':'&&', 'pri': 200}, {'op':'||', 'pri': 200},
-        {'op':'?', 'pri': 310}
+        {'op':'?', 'pri': 310},
+        {'op':'timeDiff', 'pri': 49},
+        {'op':',', 'pri': 51},
     ];
-    var right_pri = [{'op':'=', 'pri': 0}, {'op':'[', 'pri': 300}, {'op':']', 'pri': 2}, {'op':'(', 'pri': 290}, {'op':')', 'pri': 10},
+    var right_pri = [{'op':'=', 'pri': 50}, {'op':'[', 'pri': 300}, {'op':']', 'pri': 150}, {'op':'(', 'pri': 290}, {'op':')', 'pri': 180},
         {'op':'!', 'pri': 270}, {'op':'++', 'pri': 270}, {'op':'--', 'pri': 270},
         {'op':'*', 'pri': 250}, {'op':'/', 'pri': 250}, {'op':'%', 'pri': 250},
         {'op':'+', 'pri': 230}, {'op':'-', 'pri': 230},
         {'op':'>', 'pri': 210}, {'op':'<', 'pri': 210}, {'op':'>=', 'pri': 210}, {'op':'<=', 'pri': 210}, {'op':'!=', 'pri': 210}, {'op':'==', 'pri': 210},
         {'op':'&&', 'pri': 190}, {'op':'||', 'pri': 190},
-        {'op':'?', 'pri': 1}
+        {'op':'?', 'pri': 100},
+        {'op':'timeDiff', 'pri': 320},
+        {'op':',', 'pri': 51},
     ];
     var imediateOperateBeforeTernaryOp= ['!', '<', '>', '<=', '>=', '==', '&&', '||']; // 三目运算时需要先运行的操作符
 
     var ignoreValidateOP = ['$.']; // 如果表达式的元素包含 ignoreValidateOP 的一个项， 就默认这是个正常的元素， 不在校验格式
-    var normalOP = ['++', '--', '>=', '<=', '==', '!=', '&&', '||']; // 如果表达式的元素和normalOP的任意一个项相同， 也认为是正确格式
-    var supportOP = ['[', ']', '(', ')', '!', '++', '--', '/', '*', '%', '+', '-', '>', '>=', '<', '<=', '==', '!=', '&&', '||', '=', '?', ":" ];//支持的操作符， 包括三目?:
+    var normalOP = ['++', '--', '>=', '<=', '==', '!=', '&&', '||', 'timeDiff']; // 如果表达式的元素和normalOP的任意一个项相同， 也认为是正确格式
+    var supportOP = ['[', ']', '(', ')', '!', '++', '--', '/', '*', '%', '+', '-', '>', '>=', '<', '<=', '==', '!=', '&&', '||', '=', '?', ":", "timeDiff", ','];//支持的操作符， 包括三目?:
 // 如果要定义一个字符串， 并且字符串包含supportOP的字符， 那么需要用	constant_value_spliter 把数据包围起来, 例如 &chek%mg&, 这样表示设置值check%mg
     var constant_value_spliter = "&";
 
@@ -66,10 +71,7 @@ define([
 
     var dataStack = []; // 数据栈
     var opStack = []; // 操作符栈
-    var SPLITOR = " ";// 表达式数据项和操作符的分隔符
-
-
-
+    var SPLITOR = "~";// 表达式数据项和操作符的分隔符
 
     function isOp(expressionItem) {
         return isInArray(supportOP, expressionItem);
@@ -104,6 +106,28 @@ define([
         if (illeagalItems.length > 0) {
             throw  JSON.stringify(illeagalItems) + " contains operator, they should spliter by '" + SPLITOR + "'";
         }
+
+        var timeDiffError = hasTimeDiffError(expressionItems);
+        if (timeDiffError) {
+            throw " timeDiff format error, acceptable format: timeDiff" +
+            SPLITOR + '(' + SPLITOR + 'startTime' + SPLITOR + ',' + SPLITOR + 'endTime' + SPLITOR + ',' + SPLITOR + constant_value_spliter + 'diffType' + constant_value_spliter + SPLITOR + ')';
+        
+        }
+    }
+
+    function  hasTimeDiffError(expressionItems){
+        for (var i = 0; i < expressionItems.length; i++) {
+            var item = expressionItems[i];
+            if (item == 'timeDiff') {
+                if (expressionItems.length <= (i+7)) {
+                    return true;
+                }
+                if (expressionItems[i+1] != '(' || expressionItems[i+3] != ',' || expressionItems[i+5] != ',' || expressionItems[i+7] != ')' ) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     function validateBrackets(expressionItems) {
@@ -292,7 +316,6 @@ define([
     }
 
     function parseStr(str) {
-
         if (typeof str == 'string' && String.prototype.toLowerCase.call(str) == 'true') {
             return true;
         }
@@ -367,8 +390,45 @@ define([
             case '!=' :  num = dataStack.pop(); num = dataStack.pop() != num; dataStack.push(num); break;
             case '&&' : dataStack.push(dataStack.pop() && dataStack.pop()); break;
             case '||' :  dataStack.push(dataStack.pop() || dataStack.pop()); break;
+            case "timeDiff" : var diffType = dataStack.pop(), endTime  = dataStack.pop(), startTime = dataStack.pop(); dataStack.push(timeDiff(startTime, endTime, diffType)); break; // timeDiff(start, end, unit)
             default: break;
         }
+    }
+
+    function timeDiff(startTime, endTime, diffType) {
+        //将xxxx-xx-xx的时间格式，转换为 xxxx/xx/xx的格式
+        startTime = String.prototype.replace.call(startTime, /\-/g, "/");
+        endTime = String.prototype.replace.call(endTime, /\-/g, "/");
+        //将计算间隔类性字符转换为小写
+        diffType = diffType.toLowerCase();
+        var sTime =new Date(startTime); //开始时间
+        var eTime =new Date(endTime); //结束时间
+        //作为除数的数字
+        var timeType =1;
+        switch (diffType) {
+            case "second":
+                timeType =1000;
+                break;
+            case "minute":
+                timeType =1000*60;
+                break;
+            case "hour":
+                timeType =1000*3600;
+                break;
+            case "day":
+                timeType =1000*3600*24;
+                break;
+            case "diffday":
+                startTime = startTime.substr(0, startTime.length - startTime.lastIndexOf(" ")+1);
+                endTime = endTime.substr(0, endTime.length - endTime.lastIndexOf(" ")+1);
+                sTime = new Date(startTime),
+                    eTime = new Date(endTime);
+                timeType =1000*3600*24;
+                break;
+            default:
+                break;
+        }
+        return parseInt((eTime.getTime() - sTime.getTime()) / parseInt(timeType));
     }
 
     function runBeforeTernary() {
@@ -408,7 +468,7 @@ define([
                 rst.expressionItems = expressionItems.slice(ternaryEndIndex+1);
                 rst.index = -1;
             } else if (tmp == "(") {
-                ternaryEndIndex = getClosedBracketIndex(')', (lastSemicolonIndex+1), expressionItems);
+                ternaryEndIndex = getClosedBracketIndex(')', (lastSemicolonIndex + 1), expressionItems);
                 rst.expressionItems = expressionItems.slice(ternaryEndIndex+1);
                 rst.index= -1;
             } else {
