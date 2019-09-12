@@ -111,7 +111,7 @@ define([
         if (timeDiffError) {
             throw " timeDiff format error, acceptable format: timeDiff" +
             SPLITOR + '(' + SPLITOR + 'startTime' + SPLITOR + ',' + SPLITOR + 'endTime' + SPLITOR + ',' + SPLITOR + constant_value_spliter + 'diffType' + constant_value_spliter + SPLITOR + ')';
-        
+
         }
     }
 
@@ -396,13 +396,16 @@ define([
     }
 
     function timeDiff(startTime, endTime, diffType) {
-        //将xxxx-xx-xx的时间格式，转换为 xxxx/xx/xx的格式
-        startTime = String.prototype.replace.call(startTime, /\-/g, "/");
-        endTime = String.prototype.replace.call(endTime, /\-/g, "/");
         //将计算间隔类性字符转换为小写
         diffType = diffType.toLowerCase();
         var sTime =new Date(startTime); //开始时间
+        if (!sTime) {
+            throw startTime + " invalid date format";
+        }
         var eTime =new Date(endTime); //结束时间
+        if (!eTime) {
+            throw eTime + " invalid date format";
+        }
         //作为除数的数字
         var timeType =1;
         switch (diffType) {
@@ -419,8 +422,8 @@ define([
                 timeType =1000*3600*24;
                 break;
             case "diffday":
-                startTime = startTime.substr(0, startTime.length - startTime.lastIndexOf(" ")+1);
-                endTime = endTime.substr(0, endTime.length - endTime.lastIndexOf(" ")+1);
+                startTime = dateFormat(sTime, 'yyyy-MM-dd');
+                endTime = dateFormat(eTime, 'yyyy-MM-dd');
                 sTime = new Date(startTime),
                     eTime = new Date(endTime);
                 timeType =1000*3600*24;
@@ -429,6 +432,26 @@ define([
                 break;
         }
         return parseInt((eTime.getTime() - sTime.getTime()) / parseInt(timeType));
+    }
+
+
+   function dateFormat(date, fmt)
+    {
+        var o = {
+            "M+" : date.getMonth()+1,                 //月份
+            "d+" : date.getDate(),                    //日
+            "h+" : date.getHours(),                   //小时
+            "m+" : date.getMinutes(),                 //分
+            "s+" : date.getSeconds(),                 //秒
+            "q+" : Math.floor((date.getMonth()+3)/3), //季度
+            "S"  : date.getMilliseconds()             //毫秒
+        };
+        if(/(y+)/.test(fmt))
+            fmt=fmt.replace(RegExp.$1, (date.getFullYear()+"").substr(4 - RegExp.$1.length));
+        for(var k in o)
+            if(new RegExp("("+ k +")").test(fmt))
+                fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));
+        return fmt;
     }
 
     function runBeforeTernary() {
