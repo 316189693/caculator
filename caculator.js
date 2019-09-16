@@ -4,14 +4,14 @@
 * 2. 每个项之间用空格隔开， 例如  ( 4 + 5 ) < 10 || ( 3 + 6 ) < 10 ? true : false 
 * 3. 每个项都会校验， 除非项包含 ignoreValidateOP 的项， 或者是normalOP的项， 或者是#1的情况， 否则都会认为非法的项
 * 4. 已入栈的元素当成左操作符， 当前操作符为右操作符， 比较两者的优先级， 优先级高的可以入栈， 否则就要将栈操作符弹出进行运算；
-* 5. 方法[validateExpressionElementFormat, evalExpression] 存在的异常消息：
-    1. 每个表达式元素必须用逗号分隔： " each item of the expression must split by '" + SPLITOR + "'";
-	2. 表达式的括号要配对：" expression has mismatch bracket pairs.";
+* 5. 方法[validateExpressionElementFormat, evalExpression] 存在的异常消息:
+    1. 每个表达式元素必须用逗号分隔: " each item of the expression must split by '" + SPLITOR + "'";
+	2. 表达式的括号要配对:" expression has mismatch bracket pairs.";
 	3. 两个相同类型的元素不能放在一起， 比如: '+ -': 'expression has same operate type items linked:'+JSON.stringify(sameItemLinksAry);
 	4. 表达式元素里面不能包含操作符， 如果是个常量， 请前后加上'&':JSON.stringify(illeagalItems) + " contains operator, they should spliter by '" + SPLITOR + "'";
-    5. 表达式不能为空： " Bad expression:" + expression ;
-	6. 三目运算符必须配对： "'?:' operator not found match ':' ";
-	7. 不能除以0：  "caculate expression error, divide by 0." 
+    5. 表达式不能为空: " Bad expression:" + expression ;
+	6. 三目运算符必须配对: "'?:' operator not found match ':' ";
+	7. 不能除以0:  "caculate expression error, divide by 0." 
 */
 
 
@@ -20,35 +20,33 @@
     * 2. 每个项之间用空格隔开， 例如  ( 4 + 5 ) < 10 || ( 3 + 6 ) < 10 ? true : false
     * 3. 每个项都会校验， 除非项包含 ignoreValidateOP 的项， 或者是normalOP的项， 或者是#1的情况， 否则都会认为非法的项
     * 4. 已入栈的元素当成左操作符， 当前操作符为右操作符， 比较两者的优先级， 优先级高的可以入栈， 否则就要将栈操作符弹出进行运算；
-    * 5. 方法[validateExpressionElementFormat, evalExpression] 存在的异常消息：
-        1. 每个表达式元素必须用逗号分隔： " each item of the expression must split by '" + SPLITOR + "'";
-        2. 表达式的括号要配对：" expression has mismatch bracket pairs.";
+    * 5. 方法[validateExpressionElementFormat, evalExpression] 存在的异常消息:
+        1. 每个表达式元素必须用逗号分隔: " each item of the expression must split by '" + SPLITOR + "'";
+        2. 表达式的括号要配对:" expression has mismatch bracket pairs.";
         3. 两个相同类型的元素不能放在一起， 比如: '+ -': 'expression has same operate type items linked:'+JSON.stringify(sameItemLinksAry);
         4. 表达式元素里面不能包含操作符， 如果是个常量， 请前后加上'&':JSON.stringify(illeagalItems) + " contains operator, they should spliter by '" + SPLITOR + "'";
-        5. 表达式不能为空： " Bad expression:" + expression ;
-        6. 三目运算符必须配对： "'?:' operator not found match ':' ";
-        7. 不能除以0：  "caculate expression error, divide by 0."
+        5. 表达式不能为空: " Bad expression:" + expression ;
+        6. 三目运算符必须配对: "'?:' operator not found match ':' ";
+        7. 不能除以0:  "caculate expression error, divide by 0."
     */
 
     var left_pri = [{'op':'=', 'pri': 50}, {'op':'[', 'pri': 150}, {'op':']', 'pri': 300}, {'op':'(', 'pri': 180}, {'op':')', 'pri': 290},
-        {'op':'!', 'pri': 280}, {'op':'++', 'pri': 280}, {'op':'--', 'pri': 280},
+        {'op':'!', 'pri': 280}, {'op':'++', 'pri': 280}, {'op':'--', 'pri': 280},  {'op':'timeDiff', 'pri': 280},
         {'op':'*', 'pri': 260}, {'op':'/', 'pri': 260}, {'op':'%', 'pri': 260},
         {'op':'+', 'pri': 240}, {'op':'-', 'pri': 240},
         {'op':'>', 'pri': 220}, {'op':'<', 'pri': 220}, {'op':'>=', 'pri': 220}, {'op':'<=', 'pri': 220}, {'op':'!=', 'pri': 220}, {'op':'==', 'pri': 220},
         {'op':'&&', 'pri': 200}, {'op':'||', 'pri': 200},
         {'op':'?', 'pri': 310},
-        {'op':'timeDiff', 'pri': 49},
-        {'op':',', 'pri': 51},
+        {'op':',', 'pri': 285},
     ];
     var right_pri = [{'op':'=', 'pri': 50}, {'op':'[', 'pri': 300}, {'op':']', 'pri': 150}, {'op':'(', 'pri': 290}, {'op':')', 'pri': 180},
-        {'op':'!', 'pri': 270}, {'op':'++', 'pri': 270}, {'op':'--', 'pri': 270},
+        {'op':'!', 'pri': 270}, {'op':'++', 'pri': 270}, {'op':'--', 'pri': 270},  {'op':'timeDiff', 'pri': 270},
         {'op':'*', 'pri': 250}, {'op':'/', 'pri': 250}, {'op':'%', 'pri': 250},
         {'op':'+', 'pri': 230}, {'op':'-', 'pri': 230},
         {'op':'>', 'pri': 210}, {'op':'<', 'pri': 210}, {'op':'>=', 'pri': 210}, {'op':'<=', 'pri': 210}, {'op':'!=', 'pri': 210}, {'op':'==', 'pri': 210},
         {'op':'&&', 'pri': 190}, {'op':'||', 'pri': 190},
         {'op':'?', 'pri': 100},
-        {'op':'timeDiff', 'pri': 320},
-        {'op':',', 'pri': 51},
+        {'op':',', 'pri': 285},
     ];
     var imediateOperateBeforeTernaryOp= ['!', '<', '>', '<=', '>=', '==', '&&', '||']; // 三目运算时需要先运行的操作符
 
@@ -58,7 +56,7 @@
 // 如果要定义一个字符串， 并且字符串包含supportOP的字符， 那么需要用	constant_value_spliter 把数据包围起来, 例如 &chek%mg&, 这样表示设置值check%mg
     var constant_value_spliter = "&";
 
-    var unaryOP = ['++', '--', '!'];//单目运算符
+    var unaryOP = ['++', '--', '!', 'timeDiff'];//单目运算符
     var brackets = ['[', ']', '(', ')'];
 
     var dataStack = []; // 数据栈
@@ -313,12 +311,13 @@
         if(typeof str == 'string' && String.prototype.toLowerCase.call(str) == 'false') {
             return false;
         }
+		if (/^-?\d+(\.\d+)?$/.test(str)) {
+            return parseData(str);
+        }
         if (typeof str == 'string' && surroundWithConstantSpliter(str)) {
             return str.substr(1,str.length-2);
         }
-        if (/^-?\d+(\.\d+)?$/.test(str)) {
-            return parseFloat(str);
-        }
+     
         return str;
 
     }
@@ -365,26 +364,36 @@
     function count(op) {
         var num = 0.0;
         switch(op) {
-            case '+' :  dataStack.push(dataStack.pop() + dataStack.pop()); break;
-            case '-' : num = dataStack.pop(); dataStack.push(dataStack.pop()-num); break;
-            case '%' : num = dataStack.pop(); dataStack.push((dataStack.pop() % num)); break;
-            case '*' :  dataStack.push(dataStack.pop()*dataStack.pop()); break;
-            case '/' :  num = dataStack.pop(); if (num == 0) {throw "caculate expression error, divide by 0."; } dataStack.push(dataStack.pop()/num); break;
-            case '!' :  num = dataStack.pop(); dataStack.push(!num); break;
-            case '++' :  num = dataStack.pop() + 1; dataStack.push(num); break;
-            case '--' :  num = dataStack.pop() - 1; dataStack.push(num); break;
-            case '>' :  num = dataStack.pop(); num = dataStack.pop() > num; dataStack.push(num); break;
-            case '>=' :  num = dataStack.pop(); num = dataStack.pop() >= num; dataStack.push(num); break;
-            case '<' :  num = dataStack.pop(); num = dataStack.pop() < num; dataStack.push(num); break;
-            case '<=' :  num = dataStack.pop(); num = dataStack.pop() <= num; dataStack.push(num); break;
-            case '==' :  num = dataStack.pop(); num = dataStack.pop() == num; dataStack.push(num); break;
-            case '!=' :  num = dataStack.pop(); num = dataStack.pop() != num; dataStack.push(num); break;
-            case '&&' : dataStack.push(dataStack.pop() && dataStack.pop()); break;
-            case '||' :  dataStack.push(dataStack.pop() || dataStack.pop()); break;
+            case '+' :  num = parseData(dataStack.pop()) + parseData(dataStack.pop()); dataStack.push(num); break;
+            case '-' : num = parseData(dataStack.pop()); num = parseData(dataStack.pop())-num; dataStack.push(num); break;
+            case '%' : num = parseData(dataStack.pop()); num = (parseData(dataStack.pop()) % num); dataStack.push(num); break;
+            case '*' : num = parseData(dataStack.pop())*parseData(dataStack.pop()); dataStack.push(num); break;
+            case '/' :  num = parseData(dataStack.pop()); if (num == 0) {throw "caculate expression error, divide by 0."; }  num = parseData(dataStack.pop())/num; dataStack.push(num); break;
+            case '!' :  num = !parseStr(dataStack.pop()); dataStack.push(num); break;
+            case '++' :  num = parseData(dataStack.pop()) + 1; dataStack.push(num); break;
+            case '--' :  num = parseData(dataStack.pop()) - 1; dataStack.push(num); break;
+            case '>' :  num = parseStr(dataStack.pop()); num = parseStr(dataStack.pop()) > num; dataStack.push(num); break;
+            case '>=' :  num = parseStr(dataStack.pop()); num = parseStr(dataStack.pop()) >= num; dataStack.push(num); break;
+            case '<' :  num = parseStr(dataStack.pop()); num = parseStr(dataStack.pop()) < num; dataStack.push(num); break;
+            case '<=' :  num = parseStr(dataStack.pop()); num = parseStr(dataStack.pop()) <= num; dataStack.push(num); break;
+            case '==' :  num = parseStr(dataStack.pop()); num = parseStr(dataStack.pop()) == num; dataStack.push(num); break;
+            case '!=' :  num = parseStr(dataStack.pop());  num = parseStr(dataStack.pop()) != num; dataStack.push(num); break;
+            case '&&' : num = parseStr(dataStack.pop()); var tmp = parseStr(dataStack.pop()); num = num && tmp; dataStack.push(num); break;
+            case '||' : num = parseStr(dataStack.pop()); var tmp = parseStr(dataStack.pop()); num = num || tmp; dataStack.push(num); break;
             case "timeDiff" : var diffType = dataStack.pop(), endTime  = dataStack.pop(), startTime = dataStack.pop(); dataStack.push(timeDiff(startTime, endTime, diffType)); break; // timeDiff(start, end, unit)
             default: break;
         }
     }
+	
+	function parseData(data) {
+	    try {
+		   var parseData = parseFloat(data);
+		   return parseFloat(parseData.toFixed(2));
+		} catch(e) {
+		  var msg = e.message ? e.message : e;	
+	      throw "Parse Float error:" + data + " message:" + msg; 		
+		}
+	}
 
     function timeDiff(startTime, endTime, diffType) {
         //将计算间隔类性字符转换为小写
@@ -541,7 +550,7 @@
 
 /*
 4 + [ ( ( 3 -5 ) < 20 ) ? 30 : 40 ] + 6
-计算逻辑：
+计算逻辑:
 dataStack   opStack
 4           
             +
@@ -564,36 +573,38 @@ dataStack   opStack
 */
 
 var testAry = [
- {expression: "4~+~[~(~(~3~-~5~)~<~20~)~?~30~:~40~]~+~6",expected:40},
- {expression: "4~+~7~*~5~-~10~+~16",expected:45},
- {expression: "4~+~(~7~<~5~?~10~:~20~)",expected:24},
- {expression: "~4~+~7~<~5~?~10~:~20~",expected:20},
- {expression:"~5~+~4~%~2~*~3~+~6~", expected: 11},
- {expression: "~5~-~4~%~2~*~3~+~6~", expected: 11},
- {expression: "~40~+~[~(~4~-~3~==~1~)~?~(~12~*~5~<=~50~?~(~8~-~4~>~5~?~12~:~14~)~:~75~)~:~(~85~-~64~>~40~?~35~:~45~)~]~+~2~*~10~", expected: 135},
- {expression: "~40~+~(~(~4~-~3~==~1~)~?~(~12~*~5~<=~50~?~(~8~-~4~>~5~?~12~:~14~)~:~75~)~:~(~85~-~64~>~40~?~35~:~45~)~)~+~2~*~10~", expected: 135},
- {expression: "~40~+~[~(~2~-~3~==~1~)~?~(~12~*~5~<=~50~?~(~8~-~4~>~5~?~12~:~14~)~:~75~)~:~(~85~-~64~>~40~?~35~:~45~)~]~+~2~*~10~", expected: 105},
- {expression: "~10~+~20~+~50~*~2~+~100~/~10~+~40~+~(~40~-~30~)~+~(~60~*~2~)~", expected: 310},
- {expression: "~(~4~+~5~)~>~10~&&~(~3~+~6~)~<~10~?~true~:~false~", expected: false},
- {expression: "~(~4~+~5~)~>~10~||~(~3~+~6~)~<~10~?~true~:~false~", expected: true},
- {expression: "~(~4~+~5~)~<~10~&&~(~3~+~6~)~<~10~?~true~:~false~", expected: true},
- {expression: "~(~4~+~5~)~<~10~||~(~3~+~6~)~<~10~?~true~:~false~", expected: true},
- {expression: "~(~(~4~+~5~)~<~10~&&~(~3~+~6~)~<~10~)~?~true~:~false~", expected: true},
- {expression: "~!~(~4~+~5~<~6~)~?~20~:~30~", expected: 20},
- {expression: "~!~(~++~4~+~--~5~<~6~)~?~20~:~30~", expected: 20},
- {expression: "~!~(~++~4~+~--~5~<=~6~)~?~20~:~30~", expected: 20},
- {expression: "~!~(~++~4~+~--~5~==~6~)~?~20~:~30~", expected: 20},
- {expression: "~!~(~++~4~+~--~5~>~6~)~?~20~:~30~", expected: 30},
- {expression: "~!~(~++~4~+~--~5~>=~6~)~?~20~:~30~", expected: 30},
- {expression: "~!~(~++~4~+~--~5~!=~6~)~?~20~:~30~", expected: 30},
- {expression: "~[~(~4~)~]~>~5~?~3~:~2~", expected: 2},
- {expression: "~[~(~&lisi&~)~]~?~&zhangshan&~:~&wangwu&~", expected: 'zhangshan'},
- {expression: "~!~(~++~4~+~--~5~!=~6~)~?~&23%34/34&~:~&sd#$sd&~",expected: 'sd#$sd'},
- {expression: "~timeDiff~(~&2019-02-28 23:10:10&~,~&2019-03-02 12:10:10&~,~&day&~)", expected: '1'},
- {expression: "~timeDiff~(~&2019-02-28 23:10:10&~,~&2019-03-02 12:10:10&~,~&hour&~)", expected: '37'},
- {expression: "~timeDiff~(~&2019-02-28 23:10:10&~,~&2019-03-02 12:10:10&~,~&diffDay&~)", expected: '2'},
- {expression: "~timeDiff~(~&2019-02-28T23:10:10&~,~&2019-03-02T12:10:10&~,~&diffDay&~)", expected: '2'},
+//{expression: "4~+~[~(~(~3~-~5~)~<~20~)~?~30~:~40~]~+~6",expected:40},
+//{expression: "4~+~7~*~5~-~10~+~16",expected:45},
+//{expression: "4~+~(~7~<~5~?~10~:~20~)",expected:24},
+//{expression: "~4~+~7~<~5~?~10~:~20~",expected:20},
+//{expression:"~5~+~4~%~2~*~3~+~6~", expected: 11},
+//{expression: "~5~-~4~%~2~*~3~+~6~", expected: 11},
+//{expression: "~40~+~[~(~4~-~3~==~1~)~?~(~12~*~5~<=~50~?~(~8~-~4~>~5~?~12~:~14~)~:~75~)~:~(~85~-~64~>~40~?~35~:~45~)~]~+~2~*~10~", expected: 135},
+//{expression: "~40~+~(~(~4~-~3~==~1~)~?~(~12~*~5~<=~50~?~(~8~-~4~>~5~?~12~:~14~)~:~75~)~:~(~85~-~64~>~40~?~35~:~45~)~)~+~2~*~10~", expected: 135},
+//{expression: "~40~+~[~(~2~-~3~==~1~)~?~(~12~*~5~<=~50~?~(~8~-~4~>~5~?~12~:~14~)~:~75~)~:~(~85~-~64~>~40~?~35~:~45~)~]~+~2~*~10~", expected: 105},
+//{expression: "~10~+~20~+~50~*~2~+~100~/~10~+~40~+~(~40~-~30~)~+~(~60~*~2~)~", expected: 310},
+//{expression: "~(~4~+~5~)~>~10~&&~(~3~+~6~)~<~10~?~true~:~false~", expected: false},
+{expression: "~(~4~+~5~)~>~10~||~(~3~+~6~)~<~10~?~true~:~false~", expected: true},
+{expression: "~(~4~+~5~)~<~10~&&~(~3~+~6~)~<~10~?~true~:~false~", expected: true},
+{expression: "~(~4~+~5~)~<~10~||~(~3~+~6~)~<~10~?~true~:~false~", expected: true},
+{expression: "~(~(~4~+~5~)~<~10~&&~(~3~+~6~)~<~10~)~?~true~:~false~", expected: true},
+{expression: "~!~(~4~+~5~<~6~)~?~20~:~30~", expected: 20},
+{expression: "~!~(~++~4~+~--~5~<~6~)~?~20~:~30~", expected: 20},
+{expression: "~!~(~++~4~+~--~5~<=~6~)~?~20~:~30~", expected: 20},
+{expression: "~!~(~++~4~+~--~5~==~6~)~?~20~:~30~", expected: 20},
+{expression: "~!~(~++~4~+~--~5~>~6~)~?~20~:~30~", expected: 30},
+{expression: "~!~(~++~4~+~--~5~>=~6~)~?~20~:~30~", expected: 30},
+{expression: "~!~(~++~4~+~--~5~!=~6~)~?~20~:~30~", expected: 30},
+{expression: "~[~(~4~)~]~>~5~?~3~:~2~", expected: 2},
+{expression: "~[~(~&lisi&~)~]~?~&zhangshan&~:~&wangwu&~", expected: 'zhangshan'},
+{expression: "~!~(~++~4~+~--~5~!=~6~)~?~&23%34/34&~:~&sd#$sd&~",expected: 'sd#$sd'},
+{expression: "~timeDiff~(~&2019-02-28 23:10:10&~,~&2019-03-02 12:10:10&~,~&day&~)", expected: '1'},
+{expression: "~timeDiff~(~&2019-02-28 23:10:10&~,~&2019-03-02 12:10:10&~,~&hour&~)", expected: '37'},
+{expression: "~timeDiff~(~&2019-02-28 23:10:10&~,~&2019-03-02 12:10:10&~,~&diffDay&~)", expected: '2'},
+//{expression: "~timeDiff~(~&2019-02-28T23:10:10&~,~&2019-03-02T12:10:10&~,~&diffDay&~)", expected: '2'},
 // {expression: "~2~/~0~", expected: "throw error"},
+// {test: "请假几天的计算公式", expression: "(~$.fields[?(@.id=='start-field')].properties.year~==~$.fields[?(@.id=='end-field')].properties.year~&&~$.fields[?(@.id=='start-field')].properties.month~==~$.fields[?(@.id=='end-field')].properties.month~&&~$.fields[?(@.id=='start-field')].properties.day~==~$.fields[?(@.id=='end-field')].properties.day~)~?~[~$.fields[?(@.id=='start-field')].properties.hour~<~&12&~?~(~$.fields[?(@.id=='end-field')].properties.hour~<~&14&~?~&0.5&~:~&1&~)~:~(~$.fields[?(@.id=='start-field')].properties.hour~>=~&12&~?~&0.5&~:~&0&~)~]~:~[~(~timeDiff~(~$.fields[?(@.id=='start-field')].properties.value~,~$.fields[?(@.id=='end-field')].properties.value~,~&diffDay&~)~-~&1&~)~+~(~(~$.fields[?(@.id=='start-field')].properties.hour~>=~&18&~)~?~&0&~:~(~(~$.fields[?(@.id=='start-field')].properties.hour~>=~&14&~)~?~&0.5&~:~&1&~)~)~+~(~(~$.fields[?(@.id=='end-field')].properties.hour~<=~&8&~)~?~&0&~:~(~(~$.fields[?(@.id=='end-field')].properties.hour~<~&14&~)~?~&0.5&~:~&1&~)~)~]", expected: "throw error"},
+ {expression: "(~&2019&~==~&2019&~&&~&9&~==~&9&~&&~&16&~==~&17&~)~?~[~&10&~<~&12&~?~(~&09&~<~&14&~?~&0.5&~:~&1&~)~:~(~&10&~>=~&12&~?~&0.5&~:~&0&~)~]~:~[~(~timeDiff~(~&2019-09-16T10:22:30&~,~&2019-09-17T09:22:30&~,~&diffDay&~)~-~&1&~)~+~(~(~&10&~>~&18&~)~?~&0&~:~(~(~&10&~>~&14&~)~?~&0.5&~:~&1&~)~)~+~(~(~&09&~<~&8&~)~?~&0&~:~(~(~&09&~<~&14&~)~?~&0.5&~:~&1&~)~)~]", expected: "1.5"},
 ];
 
 
